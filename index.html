@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>你是哪種 STAFF？— STAFF ON MOVE</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; color: #fff; overflow-x: hidden; }
+
+/* BACKGROUND PARALLAX */
+.bg-layer {
+  position: fixed; inset: 0; z-index: 0;
+  background-image: url('images/bg-forest.jpg');
+  background-size: 110%; background-position: center;
+  filter: brightness(0.5);
+  transform: scale(1.1);
+  transition: transform 0.1s linear;
+}
+.bg-overlay { position: fixed; inset: 0; z-index: 1; background: linear-gradient(160deg, rgba(10,5,0,0.5) 0%, rgba(0,15,5,0.35) 100%); }
+
+/* WRAP */
+.wrap { max-width: 420px; margin: 0 auto; min-height: 100vh; position: relative; z-index: 10; }
+
+/* SCREENS */
+.screen { display: none; padding: 2.5rem 1.5rem 3rem; }
+.screen.active { display: block; }
+
+/* SLIDE TRANSITIONS */
+.screen.slide-in-right { animation: slideInRight 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+.screen.slide-in-left  { animation: slideInLeft  0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+.screen.slide-out-left { animation: slideOutLeft 0.3s cubic-bezier(0.4,0,1,1) forwards; }
+.screen.slide-out-right{ animation: slideOutRight 0.3s cubic-bezier(0.4,0,1,1) forwards; }
+@keyframes slideInRight  { from { opacity:0; transform: translateX(60px) scale(0.97); } to { opacity:1; transform: translateX(0) scale(1); } }
+@keyframes slideInLeft   { from { opacity:0; transform: translateX(-60px) scale(0.97); } to { opacity:1; transform: translateX(0) scale(1); } }
+@keyframes slideOutLeft  { from { opacity:1; transform: translateX(0); } to { opacity:0; transform: translateX(-60px); } }
+@keyframes slideOutRight { from { opacity:1; transform: translateX(0); } to { opacity:0; transform: translateX(60px); } }
+
+/* SVG FILTER */
+.svg-filters { position: absolute; width:0; height:0; overflow:hidden; }
+
+/* LIQUID GLASS */
+.liquid-glass { position: relative; border-radius: 18px; overflow: hidden; }
+.liquid-glass .bg-copy {
+  position: absolute; inset: 0;
+  background-image: url('images/bg-forest.jpg');
+  background-size: cover; background-position: center;
+  background-attachment: fixed;
+  filter: url(#glass-refract) brightness(0.5);
+  z-index: 0; pointer-events: none;
+}
+.liquid-glass .glass-surface {
+  position: relative; z-index: 1;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-top-color: rgba(255,255,255,0.4);
+  border-radius: 18px;
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.15), 0 8px 32px rgba(0,0,0,0.2);
+}
+
+/* BADGE */
+.som-badge { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 2.5rem; opacity: 0; animation: fadeDown 0.6s 0.2s ease forwards; }
+.som-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff4444; box-shadow: 0 0 10px rgba(255,68,68,0.7); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 6px rgba(255,68,68,0.6); } 50% { box-shadow: 0 0 14px rgba(255,68,68,1); } }
+.som-label { font-size: 11px; letter-spacing: 3px; color: rgba(255,255,255,0.6); font-weight: 500; }
+
+@keyframes fadeDown { from { opacity:0; transform: translateY(-10px); } to { opacity:1; transform: translateY(0); } }
+@keyframes fadeUp2  { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+
+/* INTRO CHARS */
+.intro-top { padding-top: 3rem; }
+.intro-chars { display: flex; justify-content: center; align-items: flex-end; gap: 6px; margin-bottom: 2.5rem; height: 130px; }
+.intro-chars img {
+  object-fit: contain; filter: brightness(0) invert(1);
+  opacity: 0; transform: translateY(30px);
+}
+.intro-chars img.char-visible { animation: charBounceIn 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.intro-chars img:nth-child(1) { height: 75px; animation-delay: 0.1s; }
+.intro-chars img:nth-child(2) { height: 95px; animation-delay: 0.2s; }
+.intro-chars img:nth-child(3) { height: 110px; animation-delay: 0.3s; }
+.intro-chars img:nth-child(4) { height: 85px; animation-delay: 0.4s; }
+@keyframes charBounceIn { from { opacity:0; transform: translateY(30px) scale(0.8); } to { opacity:0.7; transform: translateY(0) scale(1); } }
+
+/* INTRO CHARS FLOAT */
+.intro-chars img.char-float { animation: floatChar 3s ease-in-out infinite; }
+.intro-chars img:nth-child(1).char-float { animation-delay: 0s; }
+.intro-chars img:nth-child(2).char-float { animation-delay: 0.4s; }
+.intro-chars img:nth-child(3).char-float { animation-delay: 0.8s; }
+.intro-chars img:nth-child(4).char-float { animation-delay: 0.2s; }
+@keyframes floatChar { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+.intro-title { font-size: 36px; font-weight: 700; line-height: 1.2; margin-bottom: 12px; letter-spacing: -1px; color: #fff; text-shadow: 0 2px 20px rgba(0,0,0,0.5); opacity:0; animation: fadeUp2 0.6s 0.5s ease forwards; }
+.intro-title em { color: #ff5555; font-style: normal; }
+.intro-sub { font-size: 15px; color: rgba(255,255,255,0.6); line-height: 1.7; margin-bottom: 2.5rem; opacity:0; animation: fadeUp2 0.6s 0.65s ease forwards; }
+
+.start-btn {
+  width: 100%; background: rgba(196,28,28,0.85); color: #fff;
+  border: 1px solid rgba(255,100,100,0.3);
+  padding: 18px; border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer;
+  letter-spacing: 0.5px; transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(196,28,28,0.45), inset 0 1px 0 rgba(255,150,150,0.3);
+  opacity:0; animation: fadeUp2 0.6s 0.8s ease forwards;
+}
+.start-btn:active { transform: scale(0.96); }
+
+/* QUESTION */
+.q-screen { padding-top: 2rem; }
+.back-btn { background: none; border: none; color: rgba(255,255,255,0.45); font-size: 13px; cursor: pointer; padding: 0 0 1.5rem 0; display: flex; align-items: center; gap: 4px; -webkit-tap-highlight-color: transparent; transition: color 0.2s; }
+.back-btn:hover { color: rgba(255,255,255,0.8); }
+.back-btn svg { width: 16px; height: 16px; }
+.prog-wrap { margin-bottom: 2rem; }
+.prog-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.prog-qnum { font-size: 12px; color: #ff6666; font-weight: 600; letter-spacing: 2px; }
+.prog-count { font-size: 12px; color: rgba(255,255,255,0.4); }
+.prog-bar { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden; }
+.prog-fill { height: 100%; background: linear-gradient(90deg,#C41C1C,#ff6060); border-radius: 2px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 10px rgba(196,28,28,0.7); }
+.q-text { font-size: 22px; font-weight: 700; color: #fff; line-height: 1.4; margin-bottom: 2rem; letter-spacing: -0.3px; text-shadow: 0 2px 10px rgba(0,0,0,0.4); }
+
+/* OPTIONS */
+.opts { display: flex; flex-direction: column; gap: 10px; }
+.opt {
+  position: relative; border-radius: 16px; overflow: hidden; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0; transform: translateX(30px);
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
+}
+.opt.opt-visible { animation: optSlideIn 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+.opt:nth-child(1) { animation-delay: 0.05s; }
+.opt:nth-child(2) { animation-delay: 0.12s; }
+.opt:nth-child(3) { animation-delay: 0.19s; }
+.opt:nth-child(4) { animation-delay: 0.26s; }
+@keyframes optSlideIn { from { opacity:0; transform: translateX(30px); } to { opacity:1; transform: translateX(0); } }
+
+.opt .bg-copy {
+  position: absolute; inset: 0;
+  background-image: url('images/bg-forest.jpg');
+  background-size: cover; background-position: center;
+  background-attachment: fixed;
+  filter: url(#glass-refract) brightness(0.5);
+  z-index: 0; pointer-events: none; transition: filter 0.25s;
+}
+.opt .glass-surface {
+  position: relative; z-index: 1; padding: 18px 20px;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18);
+  border-top-color: rgba(255,255,255,0.35); border-radius: 16px;
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28);
+  font-size: 15px; color: rgba(255,255,255,0.88); text-align: left; line-height: 1.5;
+  transition: all 0.2s;
+}
+.opt:active { transform: scale(0.97); }
+.opt.selected .bg-copy { filter: url(#glass-refract) brightness(0.3); }
+.opt.selected .glass-surface {
+  background: rgba(196,28,28,0.22); border-color: rgba(255,100,100,0.5);
+  border-top-color: rgba(255,150,150,0.6); color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,150,150,0.4), 0 0 24px rgba(196,28,28,0.35);
+}
+
+/* RESULT */
+.result-screen { padding-top: 2.5rem; }
+.result-eyebrow { font-size: 11px; letter-spacing: 3px; color: rgba(255,255,255,0.45); text-align: center; margin-bottom: 1.5rem; opacity:0; animation: fadeDown 0.5s 0.1s ease forwards; }
+
+.result-char-bg {
+  width: 180px; height: 180px; border-radius: 50%;
+  background: rgba(196,28,28,0.12); border: 1px solid rgba(196,28,28,0.3);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.5rem;
+  box-shadow: 0 0 50px rgba(196,28,28,0.25), inset 0 1px 0 rgba(255,150,150,0.2);
+  backdrop-filter: blur(10px);
+  opacity:0; transform: scale(0.7);
+  animation: charPop 0.6s 0.2s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes charPop { to { opacity:1; transform: scale(1); } }
+.result-char-bg img { animation: charFloat 3.5s ease-in-out infinite; }
+@keyframes charFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+.result-name { font-size: 28px; font-weight: 700; color: #fff; text-align: center; margin-bottom: 1.25rem; letter-spacing: -0.5px; text-shadow: 0 2px 20px rgba(0,0,0,0.5); opacity:0; animation: fadeUp2 0.5s 0.5s ease forwards; }
+
+.glass-card { position: relative; border-radius: 18px; overflow: hidden; margin-bottom: 1.25rem; opacity:0; }
+.glass-card.card-visible { animation: fadeUp2 0.5s ease forwards; }
+.glass-card:nth-of-type(1) { animation-delay: 0.6s; }
+.glass-card:nth-of-type(2) { animation-delay: 0.75s; }
+.glass-card .bg-copy {
+  position: absolute; inset: 0;
+  background-image: url('images/bg-forest.jpg');
+  background-size: cover; background-position: center;
+  background-attachment: fixed;
+  filter: url(#glass-refract) brightness(0.42);
+  z-index: 0; pointer-events: none;
+}
+.glass-card .glass-surface {
+  position: relative; z-index: 1; padding: 1.25rem 1.5rem;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18);
+  border-top-color: rgba(255,255,255,0.35); border-radius: 18px;
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 32px rgba(0,0,0,0.2);
+}
+.result-desc { font-size: 14px; color: rgba(255,255,255,0.78); line-height: 1.9; white-space: pre-line; }
+.shoe-eyebrow { font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+.shoe-name { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+.shoe-color-pill { display: inline-block; background: rgba(196,28,28,0.7); color: #fff; font-size: 11px; padding: 4px 12px; border-radius: 20px; margin-bottom: 1.25rem; border: 1px solid rgba(255,100,100,0.3); letter-spacing: 0.5px; }
+.shoe-img-wrap { width: 100%; height: 170px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; }
+.shoe-img-wrap img { max-width: 100%; max-height: 170px; object-fit: contain; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5)); animation: shoeFloat 4s ease-in-out infinite; }
+@keyframes shoeFloat { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-8px) rotate(1deg); } }
+
+/* BUTTONS */
+.btn-stack { display: flex; flex-direction: column; gap: 10px; opacity:0; animation: fadeUp2 0.5s 0.9s ease forwards; }
+.btn-red {
+  width: 100%; background: rgba(196,28,28,0.85); color: #fff;
+  border: 1px solid rgba(255,100,100,0.3); padding: 17px; border-radius: 14px;
+  font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none;
+  display: block; text-align: center; transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 20px rgba(196,28,28,0.4), inset 0 1px 0 rgba(255,150,150,0.3);
+  backdrop-filter: blur(10px);
+}
+.btn-red:active { transform: scale(0.97); }
+.btn-glass { position: relative; border-radius: 14px; overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.18s; }
+.btn-glass:active { transform: scale(0.97); }
+.btn-glass .bg-copy {
+  position: absolute; inset: 0;
+  background-image: url('images/bg-forest.jpg');
+  background-size: cover; background-position: center;
+  background-attachment: fixed;
+  filter: url(#glass-refract) brightness(0.48);
+  z-index: 0; pointer-events: none;
+}
+.btn-glass .glass-surface {
+  position: relative; z-index: 1; padding: 17px; border-radius: 14px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+  border-top-color: rgba(255,255,255,0.4); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28);
+  font-size: 15px; color: rgba(255,255,255,0.88);
+  display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;
+  transition: background 0.2s;
+}
+.btn-glass:hover .glass-surface { background: rgba(255,255,255,0.12); }
+.btn-ghost { background: none; border: none; color: rgba(255,255,255,0.35); font-size: 13px; cursor: pointer; padding: 10px; text-align: center; width: 100%; text-decoration: underline; transition: color 0.2s; }
+.btn-ghost:hover { color: rgba(255,255,255,0.6); }
+.ig-icon { width: 20px; height: 20px; }
+
+/* SAVE CARD */
+.save-card { background: #111; border-radius: 20px; padding: 2rem 1.5rem; margin-bottom: 1rem; text-align: center; }
+.save-card-badge { font-size: 10px; letter-spacing: 3px; color: #666; margin-bottom: 1.5rem; }
+.save-card-char { height: 120px; object-fit: contain; margin-bottom: 1rem; filter: brightness(0) invert(1); }
+.save-card-type { font-size: 11px; letter-spacing: 2px; color: #C41C1C; margin-bottom: 6px; }
+.save-card-name { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 1rem; }
+.save-card-divider { height: 1px; background: #222; margin-bottom: 1rem; }
+.save-card-shoe-label { font-size: 10px; letter-spacing: 2px; color: #555; margin-bottom: 6px; }
+.save-card-shoe-color { font-size: 13px; color: #fff; font-weight: 500; margin-bottom: 1rem; }
+.save-card-shoe-img { height: 100px; object-fit: contain; margin-bottom: 1rem; }
+.save-card-footer { font-size: 10px; letter-spacing: 2px; color: #444; }
+.save-card-hashtag { font-size: 11px; color: #C41C1C; margin-top: 4px; }
+
+/* RIPPLE */
+.ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.25); transform: scale(0); animation: rippleAnim 0.5s linear; pointer-events: none; z-index: 99; }
+@keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+/* iOS FALLBACK — background-attachment:fixed is unreliable on iOS Safari.
+   When body.ios is set, we drop "fixed" and instead increase blur so the
+   glass still reads as glass even though true pass-through isn't possible. */
+body.ios .liquid-glass .bg-copy,
+body.ios .opt .bg-copy,
+body.ios .glass-card .bg-copy,
+body.ios .btn-glass .bg-copy {
+  background-attachment: scroll;
+}
+body.ios .liquid-glass .glass-surface,
+body.ios .opt .glass-surface,
+body.ios .glass-card .glass-surface,
+body.ios .btn-glass .glass-surface {
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+body.ios .bg-layer { background-attachment: scroll; }
+</style>
+</head>
+<body>
+
+<svg class="svg-filters" style="position:absolute;width:0;height:0;overflow:hidden;">
+  <defs>
+    <filter id="glass-refract" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.013 0.011" numOctaves="2" seed="5" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+      <feComponentTransfer in="gray" result="scaled">
+        <feFuncR type="linear" slope="20" intercept="-9"/>
+        <feFuncG type="linear" slope="20" intercept="-9"/>
+      </feComponentTransfer>
+      <feDisplacementMap in="SourceGraphic" in2="scaled" scale="28" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+      <feGaussianBlur in="displaced" stdDeviation="0.4"/>
+    </filter>
+  </defs>
+</svg>
+
+<div class="bg-layer" id="bgLayer"></div>
+<div class="bg-overlay"></div>
+
+<div class="wrap">
+
+  <!-- INTRO -->
+  <div id="s-intro" class="screen intro-top active">
+    <div class="som-badge">
+      <div class="som-dot"></div>
+      <span class="som-label">STAFF ON MOVE</span>
+      <div class="som-dot"></div>
+    </div>
+    <div class="intro-chars" id="introChars">
+      <img src="images/people_1.png" alt="">
+      <img src="images/people_2.png" alt="">
+      <img src="images/people_3.png" alt="">
+      <img src="images/people_4.png" alt="">
+    </div>
+    <h1 class="intro-title">你是哪種<br><em>STAFF</em>？</h1>
+    <p class="intro-sub">找出你最像哪個小人，<br>順便帶走你的幸運色。</p>
+    <button class="start-btn" onclick="goTo('s-q','right')">開始測驗</button>
+  </div>
+
+  <!-- QUESTION -->
+  <div id="s-q" class="screen q-screen">
+    <button class="back-btn" id="backBtn" onclick="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      上一題
+    </button>
+    <div class="prog-wrap">
+      <div class="prog-top">
+        <span class="prog-qnum" id="qnum">Q1</span>
+        <span class="prog-count" id="qcount">1 / 6</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="pfill" style="width:16%"></div></div>
+    </div>
+    <div class="q-text" id="qtext"></div>
+    <div class="opts" id="opts"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="s-result" class="screen result-screen">
+    <p class="result-eyebrow">你的 STAFF 類型</p>
+    <div class="result-char-bg">
+      <img id="rchar" src="" alt="" style="height:140px;object-fit:contain;filter:brightness(0) invert(1);">
+    </div>
+    <div class="result-name" id="rname"></div>
+
+    <div class="glass-card" id="descCard">
+      <div class="bg-copy"></div>
+      <div class="glass-surface"><div class="result-desc" id="rdesc"></div></div>
+    </div>
+
+    <div class="glass-card" id="shoeCard">
+      <div class="bg-copy"></div>
+      <div class="glass-surface">
+        <div class="shoe-eyebrow">你的幸運鞋色</div>
+        <div class="shoe-name">PALLADIUM OFFBOUND AMPHIBIAN WP+</div>
+        <div class="shoe-color-pill" id="rcolor"></div>
+        <div class="shoe-img-wrap"><img id="rimg" src="" alt="幸運鞋款"></div>
+      </div>
+    </div>
+
+    <div id="saveCard" class="save-card" style="display:none;">
+      <div class="save-card-badge">STAFF ON MOVE × PALLADIUM</div>
+      <img id="scChar" src="" alt="" class="save-card-char">
+      <div class="save-card-type">我的 STAFF 類型</div>
+      <div class="save-card-name" id="scName"></div>
+      <div class="save-card-divider"></div>
+      <div class="save-card-shoe-label">幸運鞋色</div>
+      <div class="save-card-shoe-color" id="scColor"></div>
+      <img id="scShoe" src="" alt="" class="save-card-shoe-img">
+      <div class="save-card-footer">ABCMART.COM.TW</div>
+      <div class="save-card-hashtag">#STAFFONMOVE #ABCMART</div>
+    </div>
+
+    <div class="btn-stack">
+      <a id="rbuy" class="btn-red" href="#" target="_blank">查看鞋款</a>
+      <div class="btn-glass" onclick="saveImage()">
+        <div class="bg-copy"></div>
+        <div class="glass-surface">
+          <svg class="ig-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          儲存結果圖片
+        </div>
+      </div>
+      <div class="btn-glass" onclick="shareResult()">
+        <div class="bg-copy"></div>
+        <div class="glass-surface">
+          <svg class="ig-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+          分享到 IG
+        </div>
+      </div>
+      <a class="btn-glass" href="https://jerry-chiang-tw.github.io/PALLADIUM-OFFBOUND-AMPHIBIAN/" target="_blank" style="text-decoration:none;">
+        <div class="bg-copy"></div>
+        <div class="glass-surface">
+          <svg class="ig-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          了解鞋款科技
+        </div>
+      </a>
+      <button class="btn-ghost" onclick="resetQuiz()">重新測驗</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+// iOS DETECTION — background-attachment:fixed is unsupported/unreliable on
+// iOS Safari (incl. Chrome/Firefox on iOS, which use WebKit). Detect and
+// fall back to a heavier blur so it still looks intentional, not broken.
+(function() {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOS) document.body.classList.add('ios');
+})();
+// PARALLAX
+window.addEventListener('scroll', () => {
+  const y = window.scrollY;
+  document.getElementById('bgLayer').style.transform = 'scale(1.1) translateY(' + (y * 0.3) + 'px)';
+});
+
+// INTRO CHAR ANIMATION
+setTimeout(() => {
+  const imgs = document.querySelectorAll('#introChars img');
+  imgs.forEach((img, i) => {
+    setTimeout(() => {
+      img.classList.add('char-visible');
+      setTimeout(() => img.classList.add('char-float'), 700);
+    }, i * 100);
+  });
+}, 100);
+
+// RIPPLE
+function addRipple(e, el) {
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  r.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+(e.clientX-rect.left-size/2)+'px;top:'+(e.clientY-rect.top-size/2)+'px';
+  el.appendChild(r);
+  setTimeout(() => r.remove(), 500);
+}
+
+// SCREEN TRANSITION
+let currentScreen = 's-intro';
+function goTo(id, dir) {
+  const outClass = dir === 'right' ? 'slide-out-left' : 'slide-out-right';
+  const inClass  = dir === 'right' ? 'slide-in-right' : 'slide-in-left';
+  const current = document.getElementById(currentScreen);
+  const next = document.getElementById(id);
+  current.classList.add(outClass);
+  setTimeout(() => {
+    current.classList.remove('active', outClass);
+    next.classList.add('active', inClass);
+    window.scrollTo(0,0);
+    setTimeout(() => next.classList.remove(inClass), 400);
+    currentScreen = id;
+    if (id === 's-q') showQ();
+    if (id === 's-result') animateResult();
+  }, 280);
+}
+
+// RESULT ANIMATION
+function animateResult() {
+  document.getElementById('descCard').classList.add('card-visible');
+  setTimeout(() => document.getElementById('shoeCard').classList.add('card-visible'), 150);
+}
+
+// QUIZ DATA
+const Qs = [
+  { text: "下班後，你第一件事是？", opts: [
+    { t: "馬上問朋友今晚要不要出來", v: "C" },
+    { t: "換上舒服的衣服，先發呆一下", v: "A" },
+    { t: "一個人去做自己喜歡的事", v: "D" },
+    { t: "已經在規劃明天要做什麼了", v: "B" }
+  ]},
+  { text: "遇到困難，你的第一反應是？", opts: [
+    { t: "直接衝，邊做邊解決", v: "B" },
+    { t: "默默自己想辦法，搞定了再說", v: "D" },
+    { t: "先冷靜分析，想清楚再行動", v: "A" },
+    { t: "馬上找人討論，集思廣益", v: "C" }
+  ]},
+  { text: "週末早上你通常在做什麼？", opts: [
+    { t: "按照自己的節奏，不被打擾", v: "D" },
+    { t: "行程已經排滿了", v: "B" },
+    { t: "睡到自然醒，慢慢開始一天", v: "A" },
+    { t: "跟朋友約好去哪了", v: "C" }
+  ]},
+  { text: "看到一雙很喜歡的鞋，你會？", opts: [
+    { t: "默默加入收藏，時機到了再說", v: "D" },
+    { t: "截圖傳給朋友問意見", v: "C" },
+    { t: "直接買，喜歡就帶走", v: "B" },
+    { t: "考慮一下，看看預算再說", v: "A" }
+  ]},
+  { text: "出發爬山前，你是？", opts: [
+    { t: "說走就走，背包塞一塞出發", v: "B" },
+    { t: "前一天把裝備整理好，確認沒問題", v: "A" },
+    { t: "自己查好路線，按計畫行動", v: "D" },
+    { t: "揪了一群朋友一起去", v: "C" }
+  ]},
+  { text: "活動結束後，你會？", opts: [
+    { t: "靜靜回味今天，記在心裡就好", v: "D" },
+    { t: "回家好好休息，充電最重要", v: "A" },
+    { t: "馬上想下一個挑戰是什麼", v: "B" },
+    { t: "拍照傳群組，分享給所有人", v: "C" }
+  ]}
+];
+
+const Rs = {
+  A: { name:"初級大人", char:"images/people_1.png", color:"灰金屬｜79606-011", img:"images/79606-011.png", link:"https://www.abc-mart.com.tw/product/79606-011", desc:"穩重但不死板，做事前習慣先想清楚。\n表面看起來很沉著，\n但偶爾還是會在心裡問自己「這樣對嗎？」\n\n沒關係，這才是真實的大人。\n你的幸運色是灰金屬——\n低調、耐看，越看越有質感。" },
+  B: { name:"YBSG", char:"images/people_2.png", color:"黑金屬｜79606-001", img:"images/79606-001.png", link:"https://www.abc-mart.com.tw/product/79606-001", desc:"什麼都做得很誇張，但就是這麼有爆發力。\n別人還在想的時候，你已經在做了。\n有時候讓人跟不上，\n但回頭看，你早就到終點了。\n\n你的幸運色是黑金屬——\n強烈、有存在感，一出場就是焦點。" },
+  C: { name:"留友看", char:"images/people_3.png", color:"褐金屬｜79606-257", img:"images/79606-257.png", link:"https://www.abc-mart.com.tw/product/79606-257", desc:"生活裡什麼都想分享，\n朋友是你最大的動力來源。\n你不只享受當下，還要讓所有人都知道。\n\n你的幸運色是褐金屬——\n溫暖、親切，走到哪都讓人想靠近。" },
+  D: { name:"高麗菜煮蛋那桌", char:"images/people_4.png", color:"綠金屬｜79606-345", img:"images/79606-345.png", link:"https://www.abc-mart.com.tw/product/79606-345", desc:"看起來普通，但細節滿滿。\n低調地有自己的一套，\n懂生活的人才看得出你的好。\n\n你的幸運色是綠金屬——\n沉穩、有個性，越靠近越發現它的層次。" }
+};
+
+let scores={A:0,B:0,C:0,D:0}, cur=0, lastResult='A', history=[];
+
+function showQ() {
+  const q = Qs[cur];
+  document.getElementById('qnum').textContent = 'Q'+(cur+1);
+  document.getElementById('qcount').textContent = (cur+1)+' / 6';
+  document.getElementById('pfill').style.width = ((cur+1)/6*100)+'%';
+  document.getElementById('qtext').textContent = q.text;
+  document.getElementById('backBtn').style.visibility = cur===0?'hidden':'visible';
+  const c = document.getElementById('opts');
+  c.innerHTML = '';
+  q.opts.forEach((o,i) => {
+    const div = document.createElement('div');
+    div.className = 'opt';
+    div.innerHTML = '<div class="bg-copy"></div><div class="glass-surface">'+o.t+'</div>';
+    div.onclick = (e) => { addRipple(e, div.querySelector('.glass-surface')); pick(o.v, div); };
+    c.appendChild(div);
+    setTimeout(() => div.classList.add('opt-visible'), i*70);
+  });
+}
+
+function pick(v, el) {
+  document.querySelectorAll('.opt').forEach(b => { b.classList.remove('selected'); b.onclick = null; });
+  el.classList.add('selected');
+  history.push(v); scores[v]++;
+  setTimeout(() => { cur++; cur < Qs.length ? showQ() : showResult(); }, 400);
+}
+
+function goBack() {
+  if (cur===0) return;
+  scores[history.pop()]--; cur--;
+  goTo('s-q','left');
+  setTimeout(showQ, 300);
+}
+
+function showResult() {
+  const top = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
+  lastResult = top;
+  const r = Rs[top];
+  document.getElementById('rchar').src = r.char;
+  document.getElementById('rname').textContent = r.name;
+  document.getElementById('rdesc').textContent = r.desc;
+  document.getElementById('rcolor').textContent = r.color;
+  document.getElementById('rimg').src = r.img;
+  document.getElementById('rbuy').href = r.link;
+  document.getElementById('scChar').src = r.char;
+  document.getElementById('scName').textContent = r.name;
+  document.getElementById('scColor').textContent = r.color;
+  document.getElementById('scShoe').src = r.img;
+  goTo('s-result','right');
+}
+
+async function saveImage() {
+  const card = document.getElementById('saveCard');
+  card.style.display = 'block';
+  await new Promise(r=>setTimeout(r,300));
+  try {
+    const canvas = await html2canvas(card,{scale:2,backgroundColor:'#111',useCORS:true,allowTaint:true});
+    card.style.display = 'none';
+    const link = document.createElement('a');
+    link.download = 'staff-on-move-result.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) {
+    card.style.display = 'none';
+    alert('儲存失敗，請直接截圖分享！');
+  }
+}
+
+function shareResult() {
+  const r = Rs[lastResult];
+  const text = 'STAFF ON MOVE 測驗：我是「'+r.name+'」！\n幸運色 '+r.color+'\n#STAFFONMOVE #ABCMART';
+  if (navigator.share) { navigator.share({text,title:'你是哪種 STAFF？'}); }
+  else { navigator.clipboard.writeText(text).then(()=>alert('已複製！貼到 IG 限動分享吧 🎉')); }
+}
+
+function resetQuiz() {
+  scores={A:0,B:0,C:0,D:0}; cur=0; history=[];
+  document.getElementById('descCard').classList.remove('card-visible');
+  document.getElementById('shoeCard').classList.remove('card-visible');
+  goTo('s-intro','left');
+  setTimeout(() => {
+    const imgs = document.querySelectorAll('#introChars img');
+    imgs.forEach(img => { img.classList.remove('char-visible','char-float'); img.style.opacity=0; });
+    setTimeout(() => {
+      imgs.forEach((img,i) => setTimeout(()=>{img.classList.add('char-visible');setTimeout(()=>img.classList.add('char-float'),700);},i*100));
+    },100);
+  },300);
+}
+</script>
+</body>
+</html>
